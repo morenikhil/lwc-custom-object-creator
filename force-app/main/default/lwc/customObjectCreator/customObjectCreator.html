@@ -1,0 +1,460 @@
+<template>
+    <lightning-card title="Custom Object Creator" icon-name="utility:custom_apps">
+
+        <template if:true={isLoading}>
+            <div class="slds-is-relative spinner-overlay">
+                <lightning-spinner alternative-text="Processing..." size="large" variant="brand"></lightning-spinner>
+            </div>
+        </template>
+
+        <div class="slds-p-horizontal_medium slds-p-bottom_medium">
+
+            <!-- ── SECTION 1: ORG CREDENTIALS ── -->
+            <div class="slds-box slds-m-bottom_medium section-card">
+                <h2 class="slds-text-heading_small slds-m-bottom_small section-title">
+                    <lightning-icon icon-name="utility:key" size="x-small" alternative-text="Credentials"></lightning-icon>
+                    &nbsp;Step 1 — Target Org Credentials
+                </h2>
+                <div class="slds-grid slds-gutters slds-wrap">
+                    <div class="slds-col slds-size_1-of-3">
+                        <lightning-combobox
+                            label="Login URL"
+                            value={credentials.loginUrl}
+                            options={loginUrlOptions}
+                            onchange={handleCredentialChange}
+                            data-field="loginUrl"
+                            required>
+                        </lightning-combobox>
+                    </div>
+                    <div class="slds-col slds-size_1-of-3">
+                        <lightning-input
+                            label="Username"
+                            type="text"
+                            value={credentials.username}
+                            onchange={handleCredentialChange}
+                            data-field="username"
+                            placeholder="user@example.com"
+                            required>
+                        </lightning-input>
+                    </div>
+                    <div class="slds-col slds-size_1-of-3">
+                        <lightning-input
+                            label="Password + Security Token"
+                            type="password"
+                            value={credentials.password}
+                            onchange={handleCredentialChange}
+                            data-field="password"
+                            placeholder="PasswordSecurityToken"
+                            required>
+                        </lightning-input>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── SECTION 2: CUSTOM OBJECT ── -->
+            <div class="slds-box slds-m-bottom_medium section-card">
+                <h2 class="slds-text-heading_small slds-m-bottom_small section-title">
+                    <lightning-icon icon-name="utility:database" size="x-small" alternative-text="Object"></lightning-icon>
+                    &nbsp;Step 2 — Custom Object Details
+                </h2>
+                <div class="slds-grid slds-gutters slds-wrap">
+                    <div class="slds-col slds-size_1-of-3">
+                        <lightning-input
+                            label="Object Label"
+                            value={objectConfig.label}
+                            onchange={handleObjectChange}
+                            onblur={autoPopulateObjectFields}
+                            data-field="label"
+                            placeholder="e.g. Work Order"
+                            required>
+                        </lightning-input>
+                    </div>
+                    <div class="slds-col slds-size_1-of-3">
+                        <lightning-input
+                            label="Plural Label"
+                            value={objectConfig.pluralLabel}
+                            onchange={handleObjectChange}
+                            data-field="pluralLabel"
+                            placeholder="e.g. Work Orders"
+                            required>
+                        </lightning-input>
+                    </div>
+                    <div class="slds-col slds-size_1-of-3">
+                        <lightning-input
+                            label="API Name (without __c)"
+                            value={objectConfig.apiName}
+                            onchange={handleObjectChange}
+                            data-field="apiName"
+                            placeholder="e.g. Work_Order"
+                            pattern="[a-zA-Z][a-zA-Z0-9_]*"
+                            message-when-pattern-mismatch="Must start with a letter. Only letters, numbers, underscores."
+                            required>
+                        </lightning-input>
+                    </div>
+                    <div class="slds-col slds-size_1-of-3 slds-m-top_small">
+                        <lightning-input
+                            label="Name Field Label"
+                            value={objectConfig.nameFieldLabel}
+                            onchange={handleObjectChange}
+                            data-field="nameFieldLabel"
+                            placeholder="e.g. Work Order Name"
+                            required>
+                        </lightning-input>
+                    </div>
+                    <div class="slds-col slds-size_1-of-3 slds-m-top_small">
+                        <lightning-combobox
+                            label="Name Field Type"
+                            value={objectConfig.nameFieldType}
+                            options={nameFieldTypeOptions}
+                            onchange={handleObjectChange}
+                            data-field="nameFieldType">
+                        </lightning-combobox>
+                    </div>
+                    <div class="slds-col slds-size_1-of-3 slds-m-top_small">
+                        <lightning-combobox
+                            label="Sharing Model"
+                            value={objectConfig.sharingModel}
+                            options={sharingModelOptions}
+                            onchange={handleObjectChange}
+                            data-field="sharingModel">
+                        </lightning-combobox>
+                    </div>
+                    <div class="slds-col slds-size_1-of-1 slds-m-top_small">
+                        <lightning-textarea
+                            label="Description (optional)"
+                            value={objectConfig.description}
+                            onchange={handleObjectChange}
+                            data-field="description"
+                            max-length="255">
+                        </lightning-textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── SECTION 3: CUSTOM FIELDS ── -->
+            <div class="slds-box slds-m-bottom_medium section-card">
+                <div class="slds-grid slds-gutters slds-align_absolute-center slds-m-bottom_small">
+                    <div class="slds-col">
+                        <h2 class="slds-text-heading_small section-title">
+                            <lightning-icon icon-name="utility:list" size="x-small" alternative-text="Fields"></lightning-icon>
+                            &nbsp;Step 3 — Custom Fields
+                        </h2>
+                    </div>
+                    <div class="slds-col slds-no-flex">
+                        <lightning-button
+                            label="+ Add Field"
+                            variant="neutral"
+                            onclick={addField}>
+                        </lightning-button>
+                    </div>
+                </div>
+
+                <template if:false={hasFields}>
+                    <p class="slds-text-color_weak slds-text-align_center slds-p-vertical_small">
+                        No custom fields added yet. Click "+ Add Field" to add fields to this object.
+                    </p>
+                </template>
+
+                <template for:each={fields} for:item="field" for:index="idx">
+                    <div key={field.id} class="field-row slds-box slds-box_x-small slds-m-top_x-small">
+                        <div class="slds-grid slds-gutters slds-wrap slds-align_absolute-center">
+                            <div class="slds-col slds-size_1-of-6">
+                                <lightning-input
+                                    label="Field Label"
+                                    value={field.label}
+                                    data-field="label"
+                                    data-index={idx}
+                                    onchange={handleFieldChange}
+                                    onblur={autoPopulateFieldApiName}
+                                    required>
+                                </lightning-input>
+                            </div>
+                            <div class="slds-col slds-size_1-of-6">
+                                <lightning-input
+                                    label="API Name (no __c)"
+                                    value={field.apiName}
+                                    data-field="apiName"
+                                    data-index={idx}
+                                    onchange={handleFieldChange}
+                                    required>
+                                </lightning-input>
+                            </div>
+                            <div class="slds-col slds-size_1-of-6">
+                                <lightning-combobox
+                                    label="Data Type"
+                                    value={field.dataType}
+                                    options={fieldTypeOptions}
+                                    data-field="dataType"
+                                    data-index={idx}
+                                    onchange={handleFieldChange}
+                                    required>
+                                </lightning-combobox>
+                            </div>
+
+                            <!-- Conditional: Length -->
+                            <div class="slds-col slds-size_1-of-6">
+                                <template if:true={field.showLength}>
+                                    <lightning-input
+                                        label="Max Length"
+                                        type="number"
+                                        value={field.length}
+                                        data-field="length"
+                                        data-index={idx}
+                                        onchange={handleFieldChange}
+                                        min="1"
+                                        max="255">
+                                    </lightning-input>
+                                </template>
+                                <template if:true={field.showDecimal}>
+                                    <lightning-input
+                                        label="Decimal Places"
+                                        type="number"
+                                        value={field.scale}
+                                        data-field="scale"
+                                        data-index={idx}
+                                        onchange={handleFieldChange}
+                                        min="0"
+                                        max="18">
+                                    </lightning-input>
+                                </template>
+                                <template if:true={field.showLongLength}>
+                                    <lightning-input
+                                        label="Max Length"
+                                        type="number"
+                                        value={field.length}
+                                        data-field="length"
+                                        data-index={idx}
+                                        onchange={handleFieldChange}
+                                        min="256"
+                                        max="131072">
+                                    </lightning-input>
+                                </template>
+                            </div>
+
+                            <!-- Conditional: Picklist values -->
+                            <div class="slds-col slds-size_1-of-6">
+                                <template if:true={field.showPicklist}>
+                                    <lightning-textarea
+                                        label="Values (one per line)"
+                                        value={field.picklistValues}
+                                        data-field="picklistValues"
+                                        data-index={idx}
+                                        onchange={handleFieldChange}
+                                        placeholder="Option A&#10;Option B&#10;Option C">
+                                    </lightning-textarea>
+                                </template>
+                            </div>
+
+                            <!-- Required + Delete -->
+                            <div class="slds-col slds-size_1-of-6 slds-grid slds-align_absolute-center slds-p-left_small">
+                                <div class="slds-col">
+                                    <lightning-input
+                                        type="checkbox"
+                                        label="Required"
+                                        checked={field.required}
+                                        data-field="required"
+                                        data-index={idx}
+                                        onchange={handleFieldChange}>
+                                    </lightning-input>
+                                </div>
+                                <div class="slds-col slds-no-flex slds-m-top_large">
+                                    <lightning-button-icon
+                                        icon-name="utility:delete"
+                                        variant="destructive"
+                                        data-index={idx}
+                                        onclick={removeField}
+                                        alternative-text="Remove field">
+                                    </lightning-button-icon>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+            </div>
+
+            <!-- ── SECTION 4: PAGE LAYOUT ── -->
+            <div class="slds-box slds-m-bottom_medium section-card">
+                <div class="slds-grid slds-gutters slds-align_absolute-center slds-m-bottom_small">
+                    <div class="slds-col">
+                        <h2 class="slds-text-heading_small section-title">
+                            <lightning-icon icon-name="utility:layout" size="x-small" alternative-text="Layout"></lightning-icon>
+                            &nbsp;Step 4 — Page Layout
+                        </h2>
+                    </div>
+                    <div class="slds-col slds-no-flex">
+                        <lightning-input
+                            type="toggle"
+                            label="Create Page Layout"
+                            checked={pageLayout.create}
+                            onchange={handlePageLayoutToggle}
+                            message-toggle-active="Yes"
+                            message-toggle-inactive="No">
+                        </lightning-input>
+                    </div>
+                </div>
+                <template if:true={pageLayout.create}>
+                    <div class="slds-grid slds-gutters slds-wrap">
+                        <div class="slds-col slds-size_1-of-2">
+                            <lightning-input
+                                label="Layout Name"
+                                value={pageLayout.name}
+                                onchange={handlePageLayoutChange}
+                                data-field="name"
+                                placeholder="e.g. Work Order Layout"
+                                required>
+                            </lightning-input>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2 slds-align_absolute-center">
+                            <lightning-input
+                                type="checkbox"
+                                label="Auto-include all custom fields in layout"
+                                checked={pageLayout.includeAllFields}
+                                onchange={handlePageLayoutChange}
+                                data-field="includeAllFields">
+                            </lightning-input>
+                        </div>
+                    </div>
+                </template>
+            </div>
+
+            <!-- ── SECTION 5: RECORD TYPE ── -->
+            <div class="slds-box slds-m-bottom_medium section-card">
+                <div class="slds-grid slds-gutters slds-align_absolute-center slds-m-bottom_small">
+                    <div class="slds-col">
+                        <h2 class="slds-text-heading_small section-title">
+                            <lightning-icon icon-name="utility:record" size="x-small" alternative-text="Record Type"></lightning-icon>
+                            &nbsp;Step 5 — Record Type
+                        </h2>
+                    </div>
+                    <div class="slds-col slds-no-flex">
+                        <lightning-input
+                            type="toggle"
+                            label="Create Record Type"
+                            checked={recordType.create}
+                            onchange={handleRecordTypeToggle}
+                            message-toggle-active="Yes"
+                            message-toggle-inactive="No">
+                        </lightning-input>
+                    </div>
+                </div>
+                <template if:true={recordType.create}>
+                    <div class="slds-grid slds-gutters slds-wrap">
+                        <div class="slds-col slds-size_1-of-3">
+                            <lightning-input
+                                label="API Name"
+                                value={recordType.apiName}
+                                onchange={handleRecordTypeChange}
+                                data-field="apiName"
+                                placeholder="e.g. Standard"
+                                required>
+                            </lightning-input>
+                        </div>
+                        <div class="slds-col slds-size_1-of-3">
+                            <lightning-input
+                                label="Label"
+                                value={recordType.label}
+                                onchange={handleRecordTypeChange}
+                                data-field="label"
+                                placeholder="e.g. Standard"
+                                required>
+                            </lightning-input>
+                        </div>
+                        <div class="slds-col slds-size_1-of-3">
+                            <lightning-textarea
+                                label="Description (optional)"
+                                value={recordType.description}
+                                onchange={handleRecordTypeChange}
+                                data-field="description">
+                            </lightning-textarea>
+                        </div>
+                    </div>
+                </template>
+            </div>
+
+            <!-- ── SECTION 6: CUSTOM TAB ── -->
+            <div class="slds-box slds-m-bottom_medium section-card">
+                <div class="slds-grid slds-gutters slds-align_absolute-center slds-m-bottom_small">
+                    <div class="slds-col">
+                        <h2 class="slds-text-heading_small section-title">
+                            <lightning-icon icon-name="utility:tab" size="x-small" alternative-text="Tab"></lightning-icon>
+                            &nbsp;Step 6 — Custom Tab
+                        </h2>
+                    </div>
+                    <div class="slds-col slds-no-flex">
+                        <lightning-input
+                            type="toggle"
+                            label="Create Custom Tab"
+                            checked={customTab.create}
+                            onchange={handleTabToggle}
+                            message-toggle-active="Yes"
+                            message-toggle-inactive="No">
+                        </lightning-input>
+                    </div>
+                </div>
+                <template if:true={customTab.create}>
+                    <div class="slds-grid slds-gutters">
+                        <div class="slds-col slds-size_1-of-3">
+                            <lightning-combobox
+                                label="Tab Icon Style"
+                                value={customTab.motif}
+                                options={tabStyleOptions}
+                                onchange={handleTabChange}
+                                data-field="motif">
+                            </lightning-combobox>
+                        </div>
+                    </div>
+                </template>
+            </div>
+
+            <!-- ── ACTION BUTTONS ── -->
+            <div class="slds-grid slds-gutters slds-m-top_medium slds-m-bottom_small">
+                <div class="slds-col">
+                    <lightning-button
+                        label="Reset Form"
+                        variant="neutral"
+                        icon-name="utility:refresh"
+                        onclick={handleReset}
+                        class="slds-m-right_small"
+                        disabled={isLoading}>
+                    </lightning-button>
+                    <lightning-button
+                        label="Create"
+                        variant="brand"
+                        icon-name="utility:apex"
+                        icon-position="right"
+                        onclick={handleCreate}
+                        disabled={isLoading}>
+                    </lightning-button>
+                </div>
+            </div>
+
+            <!-- ── CREATION LOG ── -->
+            <template if:true={hasLogs}>
+                <div class="slds-box slds-m-top_medium log-container">
+                    <div class="slds-grid slds-gutters slds-align_absolute-center slds-m-bottom_x-small">
+                        <div class="slds-col">
+                            <h3 class="slds-text-heading_small">Creation Log</h3>
+                        </div>
+                        <div class="slds-col slds-no-flex">
+                            <lightning-button
+                                label="Clear"
+                                variant="base"
+                                onclick={clearLogs}>
+                            </lightning-button>
+                        </div>
+                    </div>
+                    <div class="log-scroll">
+                        <template for:each={logs} for:item="log">
+                            <div key={log.id} class={log.cssClass}>
+                                <lightning-icon icon-name={log.icon} size="x-small" alternative-text={log.type}></lightning-icon>
+                                <span class="slds-m-left_x-small log-timestamp">{log.timestamp}</span>
+                                <span class="slds-m-left_x-small">{log.message}</span>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+            </template>
+
+        </div>
+    </lightning-card>
+</template>

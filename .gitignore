@@ -1,0 +1,16 @@
+# Salesforce
+.sfdx/
+.sf/
+*.zip
+
+# Node
+node_modules/
+.npm/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/settings.json
+*.swp
