@@ -23,7 +23,7 @@ A Salesforce Lightning Web Component (LWC) that lets you create a fully configur
 
 Instead of manually navigating through Salesforce Setup to create objects, fields, layouts, and tabs one by one, this tool provides a **single-screen form** where you fill in all the details and click **Create** — everything gets provisioned automatically in the target org via the Salesforce Metadata API.
 
-![Component Screenshot](https://placehold.co/900x500?text=Custom+Object+Creator+LWC)
+<img width="1257" height="1172" alt="lwc-custom-object-creator" src="https://github.com/user-attachments/assets/fd6bbf8f-f097-4bbd-a0f4-ce9551ff0c9f" />
 
 ---
 
